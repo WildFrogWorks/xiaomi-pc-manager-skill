@@ -6,6 +6,8 @@ Read-only inspection/verification, or explicitly authorized installation of one 
 Inspect and Verify do not execute Xiaomi code or change system configuration. They write
 local JSON reports only. Install invokes the separately prepared installer with /S and
 Windows elevation; the user handles UAC. No security settings or hardware IDs are changed.
+This helper is the known 5.8.1.130 x64 fast path. Other builds and native architectures
+continue through the Skill's adaptive analysis workflow, not this fixed installer.
 Use a fresh, local, non-linked work directory for each installation attempt.
 .EXAMPLE
 .\Invoke-CompatibilityWorkflow.ps1 -WorkDirectory D:\XiaomiCompatibility\run-1 -SourceInstaller D:\Downloads\XiaomiPCManager_5.8.1.130.exe
@@ -92,6 +94,16 @@ function Get-CompatDiskSpace {
         $result += [pscustomobject]@{ purpose = $entry.purpose; available_bytes = $drive.AvailableFreeSpace; minimum_bytes = $script:CompatMinimumFreeBytes; meets_workflow_minimum = ($drive.AvailableFreeSpace -ge $script:CompatMinimumFreeBytes) }
     }
     return $result
+}
+
+function Assert-CompatNativeX64Host {
+    # Query native processor architecture, not the PowerShell process: an x64 process
+    # on ARM64 does not establish compatibility with the pinned installer's drivers.
+    try { $processors = @(Get-CimInstance -ClassName Win32_Processor -Property Architecture -ErrorAction Stop) }
+    catch { throw 'Native processor architecture could not be verified. Continue with the adaptive workflow in references/workflow.md; do not use the fixed x64 installation path.' }
+    if ($processors.Count -eq 0 -or @($processors | Where-Object { $null -eq $_.Architecture -or $_.Architecture -ne 9 }).Count -gt 0) {
+        throw 'The fixed 5.8.1.130 x64 installation path requires a verified native AMD64 host. Continue with the adaptive workflow in references/workflow.md for this host and package; ARM64 and other candidates are not rejected by the Skill.'
+    }
 }
 
 function Get-CompatSnapshot {
@@ -203,7 +215,7 @@ function Get-CompatOriginalInstallerEvidence {
         $hash = [Security.Cryptography.SHA256]::Create()
         try { $actual = ([BitConverter]::ToString($hash.ComputeHash($stream))).Replace('-', '').ToLowerInvariant() }
         finally { $hash.Dispose() }
-        if ($actual -ne $script:CompatSourceHash) { throw 'Original installer SHA-256 mismatch; this build is unsupported.' }
+        if ($actual -ne $script:CompatSourceHash) { throw 'Original installer SHA-256 mismatch for the fixed 5.8.1.130 path; continue with the adaptive workflow in references/workflow.md.' }
         $signature = [string](Get-AuthenticodeSignature -LiteralPath $full).Status
         if ($signature -ne 'Valid') { throw 'Original installer Authenticode signature is not Valid. Resolve signature verification before preparing an installation.' }
         return [pscustomobject]@{ provided = $true; validated = $true; sha256 = $actual; bytes = $stream.Length; signature_status = $signature; checked_utc = [DateTime]::UtcNow.ToString('o') }
@@ -237,6 +249,7 @@ function Invoke-CompatInstall {
     if (-not $baseline.original_installer.validated -or $baseline.original_installer.sha256 -ne $script:CompatSourceHash -or $baseline.original_installer.signature_status -ne 'Valid' -or $baseline.original_installer.bytes -ne $script:CompatPreparedSize) {
         throw 'Install requires a fresh Inspect baseline with -SourceInstaller that passed the pinned hash, size and official Authenticode validation.'
     }
+    Assert-CompatNativeX64Host
     if ($baseline.issues -contains 'os_inventory_unavailable') { throw 'Operating-system inventory is unavailable; resolve that issue before installation.' }
     if ($baseline.issues.Count -gt 0) { Write-Warning ('Some optional baseline inventories are incomplete: ' + ($baseline.issues -join ', ') + '. Missing inventory must not be treated as absence of components.') }
     if (@(Get-CompatDiskSpace -Directory $Directory | Where-Object { -not $_.meets_workflow_minimum }).Count -gt 0) { throw 'At least 8 GiB free space is required on the system and workspace drives by this workflow.' }

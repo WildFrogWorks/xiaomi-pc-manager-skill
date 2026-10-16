@@ -1,4 +1,4 @@
 interface:
   display_name: "小米电脑管家兼容安装"
-  short_description: "校验指定小米电脑管家安装包，生成兼容副本并完成授权安装与功能核对"
-  default_prompt: "使用 $xiaomi-pc-manager-compat-skill 校验我提供的官方 EXE，准备兼容副本，并按我的授权继续安装和验证。"
+  short_description: "接收不同版本候选，分析机型限制并尝试适配，按授权安装后逐项验证实际效果"
+  default_prompt: "使用 $xiaomi-pc-manager-compat-skill 分析我提供的官方安装包，不按版本白名单拒绝，尝试适配机型限制，并按我的授权安装和验证实际效果。"

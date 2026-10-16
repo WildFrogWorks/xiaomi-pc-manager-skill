@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Inspect, prepare, or verify one exact Xiaomi PC Manager installer build.
+"""Known-build fast path: inspect, prepare, or verify one exact installer.
 
 Python 3.10+; standard library only. Never downloads or executes a target.
 The JSON profile is a readable reference; CLI checks are pinned in this script.
+Other files belong to inspect_candidate.py and references/adapting-builds.md;
+not matching this helper is not a rejection by the overall Skill.
 """
 from __future__ import annotations
 
@@ -105,11 +107,11 @@ def _inspect(source: Path, profile: _Profile) -> dict:
     digest = hashlib.sha256()
     with source.open("rb") as stream:
         if os.fstat(stream.fileno()).st_size != profile.size:
-            _reject("unsupported_size", "Installer size is not the supported build; no patch was applied.")
+            _reject("unsupported_size", "Size differs from the fixed-build fast path. Continue with inspect_candidate.py and adaptive analysis; no patch was applied.")
         for block in iter(lambda: stream.read(CHUNK_SIZE), b""):
             digest.update(block)
         if digest.hexdigest() != profile.source_sha256:
-            _reject("unsupported_hash", "Installer SHA-256 is not the supported build; no patch was applied.")
+            _reject("unsupported_hash", "Fingerprint differs from the fixed-build fast path. Continue with inspect_candidate.py and adaptive analysis; no patch was applied.")
         stream.seek(profile.offset)
         if stream.read(len(profile.old)) != profile.old:
             _reject("branch_mismatch", "Expected original branch bytes differ.")

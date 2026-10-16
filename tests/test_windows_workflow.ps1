@@ -127,9 +127,37 @@ function Start-Process {
     $fake | Add-Member -MemberType ScriptMethod -Name Refresh -Value { }
     return $fake
 }
+# Keep architecture tests independent of the machine running the suite. Win32_Processor
+# is queried even when the PowerShell process is 64-bit; no real CIM call is made here.
+$script:processorArchitectureRows = @([pscustomobject]@{ Architecture = 9 })
+$script:simulateArchitectureFailure = $false
+function Get-CimInstance {
+    param($ClassName, $Property, $ErrorAction)
+    if ($ClassName -ne 'Win32_Processor' -or $Property -ne 'Architecture' -or $ErrorAction -ne 'Stop') { throw 'Unexpected CIM query in isolated architecture test.' }
+    if ($script:simulateArchitectureFailure) { throw 'Synthetic architecture query failure.' }
+    return $script:processorArchitectureRows
+}
+$architectureCases = @(
+    @{ name = 'ARM64'; rows = @([pscustomobject]@{ Architecture = 12 }); query_failure = $false },
+    @{ name = 'unknown'; rows = @([pscustomobject]@{ Architecture = 65535 }); query_failure = $false },
+    @{ name = 'missing value'; rows = @([pscustomobject]@{ Architecture = $null }); query_failure = $false },
+    @{ name = 'no processors'; rows = @(); query_failure = $false },
+    @{ name = 'mixed architectures'; rows = @([pscustomobject]@{ Architecture = 9 }, [pscustomobject]@{ Architecture = 12 }); query_failure = $false },
+    @{ name = 'query failure'; rows = @([pscustomobject]@{ Architecture = 9 }); query_failure = $true }
+)
+foreach ($case in $architectureCases) {
+    $script:processorArchitectureRows = $case.rows
+    $script:simulateArchitectureFailure = $case.query_failure
+    $architectureDir = New-TestBaseline
+    Assert-Throws { Invoke-CompatInstall -Directory $architectureDir -Installer $tiny -Authorized $true } ($case.name + ' leaves fixed installation for adaptive analysis') 'adaptive workflow'
+    Assert-True ($script:launchCalls -eq 0) ($case.name + ' never launches an installer')
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $architectureDir 'install-attempt.local.json'))) ($case.name + ' does not record an installation attempt')
+}
+$script:processorArchitectureRows = @([pscustomobject]@{ Architecture = 9 })
+$script:simulateArchitectureFailure = $false
 $success = New-TestBaseline
 $install = Invoke-CompatInstall -Directory $success -Installer $tiny -Authorized $true
-Assert-True ($install.exit_code -eq 0 -and $script:launchCalls -eq 1) 'authorized mocked installation completed'
+Assert-True ($install.exit_code -eq 0 -and $script:launchCalls -eq 1) 'native AMD64 permits authorized mocked installation'
 Assert-True (@(Get-ChildItem -LiteralPath $success -Filter 'install-started-*.json').Count -eq 1) 'started status preserved'
 Assert-True (@(Get-ChildItem -LiteralPath $success -Filter 'install-finished-*.json').Count -eq 1) 'finished status preserved'
 Assert-Throws { Invoke-CompatInstall -Directory $success -Installer $tiny -Authorized $true } 'repeat installation prevented'
