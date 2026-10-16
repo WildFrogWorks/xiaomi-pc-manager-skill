@@ -1,0 +1,19 @@
+# Local artifacts and private diagnostics do not belong in the source release.
+__pycache__/
+*.py[cod]
+.venv/
+.env
+work/
+reports/
+downloads/
+prepared/
+private/
+*.exe
+*.dll
+*.sys
+*.cat
+*.msi
+*.cab
+*.zip
+*.7z
+*.log

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "product": "Xiaomi PC Manager",
+  "version": "5.8.1.130",
+  "size_bytes": 766644624,
+  "source_sha256": "d812cf30805d172474eb33b2f97f37129593f9d50f09d4224f73d530a2cb40e9",
+  "prepared_sha256": "a7d35102dc1abdb5e8a5e45ba43c6a6b22f5b30cd9c456799a5bfea65f210e34",
+  "patch": {
+    "file_offset": "0xd9600",
+    "rva": "0xda200",
+    "original_bytes": "0f84fb010000",
+    "prepared_bytes": "e99400000090",
+    "original_target_rva": "0xda401",
+    "prepared_target_rva": "0xda299",
+    "changed_byte_count": 5,
+    "instruction_range_bytes": 6,
+    "guard_file_offset": "0xd95ec",
+    "guard_bytes": "e88f5dfeff84c00f8409030000"
+  },
+  "scope": "One silent-install OEM/model eligibility branch. Interactive installation is unchanged.",
+  "verified_silent_argument": "/S",
+  "alternative_parsed_silent_argument": "/Silent",
+  "custom_install_directory_argument_verified": false,
+  "signature_effect": "The modified installer has an invalid original Authenticode signature (HashMismatch).",
+  "payload_modified": false,
+  "core_files": {
+    "XiaomiPcManager.exe": "f2b6c1cd42a1c4d52e8bd616b599eb7e4a2a45da53c911ede7372967b37dce0e",
+    "XiaomiPcManager.dll": "1b8a9c0d2a836ad6633527f03b38df416233b97703dd61dd82b28d1f0f76d312",
+    "PcControlCenter.dll": "07cf478b75ad5045a61e27da47dbdefb11e45aec2b67bd6d33458772b84adbcd",
+    "MiSmartShareDLL.dll": "0f6ad49f96c984809d232c388c88d1b1725fb77050af27cf7c6ae6c7acec98f6",
+    "MiSmartShareClrWrapper.dll": "72547031e06dda6ef015a4b0ebf1bc027985463676a5be7e886f94ff1fcb0eea"
+  },
+  "runtime_evidence_scope": "One non-Xiaomi Windows 11 host with pre-existing Xiaomi components; not a clean-system or general hardware certification.",
+  "runtime_user_confirmed": [
+    "Real-account logout and login",
+    "Phone desktop displayed and controlled with mouse",
+    "PC-to-phone file transfer",
+    "Phone-to-PC file transfer",
+    "Bidirectional clipboard"
+  ],
+  "not_established": [
+    "Byte-identical end-to-end transferred-file hashes",
+    "Tablet keyboard/mouse sharing and TV casting",
+    "All camera, virtual audio/display, or OEM hardware features",
+    "Long-term account refresh and all cloud synchronization types",
+    "Successful installation of a later release through automatic update",
+    "Complete restoration of a previous service/driver state after uninstall"
+  ]
+}
